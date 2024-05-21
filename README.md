@@ -1,3 +1,4 @@
+```markdown
 # Fraud Detection in Supply Chains Using Kolmogorov Arnold Networks
 
 This project, titled "Enhancing Fraud Detection in Supply Chains with Kolmogorov Arnold Networks: A Comparative Analysis with Multi-Layer Perceptrons (Initial Findings and Methodology)," aims to enhance fraud detection in supply chains by leveraging Kolmogorov Arnold Networks (KANs) and contrasting their performance with traditional Multi-Layer Perceptrons (MLPs).
@@ -74,9 +75,7 @@ The dataset comprises transactional data from a supply chain, including features
 
 The project requires the following dependencies:
 
-
-```python
-# python==3.9.7
+```bash
 matplotlib==3.6.2
 numpy==1.24.4
 scikit_learn==1.1.3
@@ -92,9 +91,33 @@ For installation of these packages, please refer to the [installation guide](htt
 
 Contributions to the project are welcome. Please fork the repository, make your changes, and submit a pull request. For major changes, open an issue first to discuss what you would like to change.
 
-## Acknowledgments
+## References
 
-- **Pushshift API**: For providing access to historical Reddit data.
-- **Supply Chain Community**: For their vibrant discussions which made this analysis possible.
+- Soori, M., & Arezoo, B. (2023). Artificial Neural Networks (ANNs) in supply chain management: Opportunities and challenges. Journal of Economy and Technology, 18(3), 87-102. DOI
+- Das, S. (2023). Artificial Neural Networks for Fraud Detection in Supply Chain Analytics: MLPClassifier and Keras. GitHub repository
+- Liu, Z., et al. (2024). Kolmogorov-Arnold Networks. arXiv preprint
 
 For more details, refer to the [Article](https://chrisd-7.github.io/ChrisDSilva/assets/files/articles/KAN-Article/KANArticle.html) directory.
+
+## Citation
+
+```python
+@article{liu2024kan,
+  title={KAN: Kolmogorov-Arnold Networks},
+  author={Liu, Ziming and Wang, Yixuan and Vaidya, Sachin and Ruehle, Fabian and Halverson, James and Solja{\v{c}}i{\'c}, Marin and Hou, Thomas Y and Tegmark, Max},
+  journal={arXiv preprint arXiv:2404.19756},
+  year={2024}
+}
+```
+
+## To Cite me
+
+```python
+@project{ChrisD-7,
+  title={Enhancing Fraud Detection in Supply Chains with Kolmogorov Arnold Networks: A Comparative Analysis with Multi-Layer Perceptrons (Initial Findings and Methodology)},
+  author={Chris DSilva},
+  year={2024},
+  howpublished={\url{https://github.com/ChrisD-7/Fraud-Detection-in-Supply-Chains-with-Kolmogorov-Arnold-Networks/blob/main/README.md}}
+}
+```
+```
