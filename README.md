@@ -124,3 +124,9 @@ For more details, refer to the [Article](https://chrisd-7.github.io/ChrisDSilva/
   howpublished={\url{https://github.com/ChrisD-7/Fraud-Detection-in-Supply-Chains-with-Kolmogorov-Arnold-Networks/blob/main/README.md}}
 }
 ```
+
+## Classification Model
+<video controls src="Classification/video_classification.mp4" title="Classification Model"></video>
+
+## Regression Model
+<video controls src="Regression/video_regression.mp4" title="Regression Model"></video>
