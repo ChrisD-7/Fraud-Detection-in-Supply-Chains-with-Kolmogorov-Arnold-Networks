@@ -75,7 +75,10 @@ The dataset comprises transactional data from a supply chain, including features
 
 The project requires the following dependencies:
 
-```bash
+Requirements
+
+```python
+# python==3.9.7
 matplotlib==3.6.2
 numpy==1.24.4
 scikit_learn==1.1.3
@@ -84,6 +87,7 @@ sympy==1.11.1
 torch==2.2.2
 tqdm==4.66.2
 ```
+
 
 For installation of these packages, please refer to the [installation guide](https://github.com/KindXiaoming/pykan?tab=readme-ov-file#installation).
 
