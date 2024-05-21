@@ -75,7 +75,8 @@ The dataset comprises transactional data from a supply chain, including features
 The project requires the following dependencies:
 
 
-```bash
+```python
+# python==3.9.7
 matplotlib==3.6.2
 numpy==1.24.4
 scikit_learn==1.1.3
@@ -83,14 +84,7 @@ setuptools==65.5.0
 sympy==1.11.1
 torch==2.2.2
 tqdm==4.66.2
-
-matplotlib==3.6.2
-numpy==1.24.4
-scikit_learn==1.1.3
-setuptools==65.5.0
-sympy==1.11.1
-torch==2.2.2
-tqdm==4.66.2
+```
 
 For installation of these packages, please refer to the [installation guide](https://github.com/KindXiaoming/pykan?tab=readme-ov-file#installation).
 
@@ -103,4 +97,4 @@ Contributions to the project are welcome. Please fork the repository, make your 
 - **Pushshift API**: For providing access to historical Reddit data.
 - **Supply Chain Community**: For their vibrant discussions which made this analysis possible.
 
-For more details, refer to the [Article](Article) directory.
+For more details, refer to the [Article](Article/KAN-Article/KANArticle.html) directory.
