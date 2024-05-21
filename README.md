@@ -97,4 +97,4 @@ Contributions to the project are welcome. Please fork the repository, make your 
 - **Pushshift API**: For providing access to historical Reddit data.
 - **Supply Chain Community**: For their vibrant discussions which made this analysis possible.
 
-For more details, refer to the [Article](Article/KAN-Article.pdf) directory.
+For more details, refer to the [Article](https://chrisd-7.github.io/ChrisDSilva/assets/files/articles/KAN-Article/KANArticle.html) directory.
