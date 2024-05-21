@@ -1,4 +1,3 @@
-```markdown
 # Fraud Detection in Supply Chains Using Kolmogorov Arnold Networks
 
 This project, titled "Enhancing Fraud Detection in Supply Chains with Kolmogorov Arnold Networks: A Comparative Analysis with Multi-Layer Perceptrons (Initial Findings and Methodology)," aims to enhance fraud detection in supply chains by leveraging Kolmogorov Arnold Networks (KANs) and contrasting their performance with traditional Multi-Layer Perceptrons (MLPs).
@@ -75,9 +74,10 @@ The dataset comprises transactional data from a supply chain, including features
 
 The project requires the following dependencies:
 
+
 Requirements
 
-```
+```python
 # python==3.9.7
 matplotlib==3.6.2
 numpy==1.24.4
