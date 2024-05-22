@@ -126,7 +126,7 @@ For more details, refer to the [Article](https://chrisd-7.github.io/ChrisDSilva/
 ```
 
 ## Classification Model
-[Classification Model in Training](Classification/video_classification-ezgif.com-video-to-gif-converter.gif)
+![Classification Model in Training](Classification/video_classification-ezgif.com-video-to-gif-converter.gif)
 
 
 ## EDA and Model Building with Pruning 
