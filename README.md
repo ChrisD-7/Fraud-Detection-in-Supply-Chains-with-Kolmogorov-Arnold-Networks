@@ -126,7 +126,13 @@ For more details, refer to the [Article](https://chrisd-7.github.io/ChrisDSilva/
 ```
 
 ## Classification Model
-<video controls src="Classification/video_classification.mp4" title="Classification Model"></video>
+[Classification Model in Training](Classification/video_classification-ezgif.com-video-to-gif-converter.gif)
 
-## Regression Model
-<video controls src="Regression/video_regression.mp4" title="Regression Model"></video>
+
+## EDA and Model Building with Pruning 
+![EDA & Model Plots](Classification/KAN_EDA_and_classification.gif)
+
+## Activation Function Plots
+![First Part: Activation Functions for the Middle Neurons in the First Hidden Layer](Classification/KAN_classification_files/activation_func_middle_neuron_and_hidden_layer.png)
+
+![Second Part: Activation Functions Between the First Hidden Layer and the Output Layer](Classification/KAN_classification_files/activation_between_hidden_and_output.png)
