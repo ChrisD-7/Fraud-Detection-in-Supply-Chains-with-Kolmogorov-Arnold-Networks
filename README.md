@@ -28,7 +28,7 @@ The dataset comprises transactional data from a supply chain, including features
 - Split order dates into separate year, month, day, and hour columns.
 
 ### Feature Engineering
-- Created a target variable named 'fraud' based on the 'Order Status' category.
+- Created a target variable named 'fraud' based on the 'Order Status' and 'Type' category.
 - Unified first and last names into a 'Cust_Full_Name' column.
 - Formatted date columns for consistency and time-based analysis.
 
@@ -36,10 +36,10 @@ The dataset comprises transactional data from a supply chain, including features
 - Identified and label-encoded categorical columns to convert them into numerical values.
 
 ### Handling Class Imbalance
-- Applied the Adaptive Synthetic (ADASYN) algorithm to balance the training data.
+- Applied the Adaptive Synthetic (ADASYN) algorithm to balance the training data to address the imbalance in the data with lower fraud values.
 
 ### Converting Data to Tensors
-- Split the dataset into training and test sets.
+- Split the dataset into training and test sets while stratifying the training data to ensure a balance in the dataset.
 - Converted the preprocessed data into PyTorch tensors.
 
 ## Model Development
@@ -50,24 +50,23 @@ The dataset comprises transactional data from a supply chain, including features
 
 ### Training Process
 - Utilized the LBFGS optimizer for high-dimensional problems.
-- Trained for 11 epochs, tracking both training and test accuracy.
+- Trained for 5 epochs, tracking both training and test accuracy.
 - Saved visual representations of the training process.
 
 ## Evaluation Metrics
 
-- Achieved a train accuracy of 60% and a test accuracy of 98%.
-- Derived a symbolic formula for the decision boundary with train and test accuracies of 59.3% and 97% respectively.
+- Derived a symbolic formula for the decision boundary with train and test accuracies of 90.44% and 99% for formula 1 and train and test accuracy of 89.53% and 98% respectively for formula 2. (Selected Formula 1 based on the score for this reason)
 - Visualized model activations and pruned less significant connections for efficiency.
 
 ## Analysis and Insights
 
-- **Accuracy**: Substantial improvement in test accuracy.
-- **Formula Derivation**: Captured underlying patterns of fraudulent transactions.
-- **Visualization and Pruning**: Ensured efficient model performance while maintaining accuracy.
+- **Accuracy**: Substantial improvement in test accuracy with a smaller dataset seen with the test and train accuracy.(recommended training for higher steps)
+- **Formula Derivation**: Captured underlying patterns of fraudulent transactions based on each activation function present on the nodes.
+- **Visualization and Pruning**: We then plot each activation function that can be analyzed further and then prune the model to ensure an efficient model performance while maintaining accuracy.
 
 ## Suggestions
 
-- **Compute Resources**: Larger datasets require greater compute power, suggesting the need for GPU usage.
+- **Compute Resources**: Larger datasets require greater compute power, suggesting the need to build the model on the GPU for better compute.
 - **Ideal Applications**: Suitable for various fields including pharmaceutical, manufacturing, market research, energy sector, environmental science, and legal compliance.
 
 ## Requirements
