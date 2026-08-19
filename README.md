@@ -1,3 +1,5 @@
+
+
 # Fraud Detection in Supply Chains Using Kolmogorov Arnold Networks
 
 This project, titled "Enhancing Fraud Detection in Supply Chains with Kolmogorov Arnold Networks: A Comparative Analysis with Multi-Layer Perceptrons (Initial Findings and Methodology)," aims to enhance fraud detection in supply chains by leveraging Kolmogorov Arnold Networks (KANs) and contrasting their performance with traditional Multi-Layer Perceptrons (MLPs).
@@ -98,7 +100,7 @@ Contributions to the project are welcome. Please fork the repository, make your 
 
 - Soori, M., & Arezoo, B. (2023). Artificial Neural Networks (ANNs) in supply chain management: Opportunities and challenges. Journal of Economy and Technology, 18(3), 87-102. DOI
 - Das, S. (2023). Artificial Neural Networks for Fraud Detection in Supply Chain Analytics: MLPClassifier and Keras. GitHub repository
-- Liu, Z., et al. (2024). Kolmogorov-Arnold Networks. arXiv preprint
+- Liu, Z., et al. (2024). Kolmogorov-Arnold Networks. arXiv preprint arXiv:2404.19756
 
 For more details, refer to the [Article](https://chrisd-7.github.io/ChrisDSilva/assets/files/articles/KAN-Article/KANArticle.html) directory.
 
