@@ -46,6 +46,11 @@ IDENTIFIER_COLUMNS = (
 
 # Personal data. The public dataset already masks these, but they must never be
 # features. Dropping them also keeps the pipeline safe if an unmasked copy is used.
+#
+# Location columns are deliberately NOT in this list: Customer City/State/Country,
+# Order City/State/Region/Country and Latitude/Longitude stay in the feature matrix.
+# They are coarse here and carry no measured label signal, but on an unmasked copy they
+# are quasi-identifiers, so do not read this list as "no personal data reaches the model".
 PII_COLUMNS = (
     "Customer Email",
     "Customer Password",
@@ -58,6 +63,10 @@ PII_COLUMNS = (
 UNUSABLE_COLUMNS = ("Product Description", "Product Image", "Product Status")
 
 # Recorded only after the shipment/order resolved, so unavailable at prediction time.
+#
+# NOTE: "Days for shipping (real)" is also only known after shipment and is deliberately
+# kept: its univariate ROC-AUC on the real dataset is ~0.49, i.e. it carries no label
+# signal, and removing it would change the published feature set for no measured gain.
 POST_HOC_COLUMNS = ("shipping date (DateOrders)",)
 
 # Raw timestamps are replaced by the derived calendar features below.
@@ -199,6 +208,15 @@ def curate(df: pd.DataFrame, cfg: Config) -> pd.DataFrame:
     kept = df.drop(columns=to_drop)
     if cfg.data.drop_na_rows:
         kept = kept.dropna()
+    elif kept.isna().any().any():
+        # drop_na_rows=false is only safe when curation removed every NaN by itself.
+        # Surviving NaNs reach the scaler and then the model, so fail loudly here rather
+        # than let them propagate into the metrics.
+        bad = [name for name in kept.columns if kept[name].isna().any()]
+        raise ValueError(
+            f"NaN cells survived curation in {bad}; set data.drop_na_rows=true, or fix the "
+            "source data, or extend the column lists in data.py"
+        )
     return kept
 
 

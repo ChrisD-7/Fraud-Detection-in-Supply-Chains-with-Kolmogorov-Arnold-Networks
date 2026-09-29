@@ -44,46 +44,93 @@ Every run writes `results/<run_name>/metrics.json` and `summary.md`. Both number
 this machine (RTX 3080 Laptop, CUDA), with a grouped split by `Order Id`, ADASYN on the train
 split only, and the symbolic branch on.
 
-### The headline run — `configs/default.yaml` (50,000 rows, 20 LBFGS steps, 5 min 55 s)
+### The headline run — `configs/default.yaml` (50,000 rows, 20 LBFGS steps, 5 min 40 s)
 
 Test set: n=10,026, 231 positives (base rate 2.30 %).
 
 | metric | KAN (test) | majority baseline | lift |
 |---|---|---|---|
-| accuracy | 0.9263 | 0.9770 | **-0.0507** |
-| precision | 0.0877 | 0.0000 | +0.0877 |
-| recall | 0.2338 | 0.0000 | +0.2338 |
-| f1 | 0.1275 | 0.0000 | +0.1275 |
-| pr_auc | 0.0883 | 0.0230 | +0.0653 |
-| roc_auc | 0.8801 | 0.5000 | +0.3801 |
+| accuracy | 0.9271 | 0.9770 | **-0.0499** |
+| precision | 0.0942 | 0.0000 | +0.0942 |
+| recall | 0.2511 | 0.0000 | +0.2511 |
+| f1 | 0.1370 | 0.0000 | +0.1370 |
+| pr_auc | 0.0905 | 0.0230 | +0.0675 |
+| roc_auc | 0.8813 | 0.5000 | +0.3813 |
 
-**Accuracy is below the do-nothing baseline** (0.9263 vs 0.9770) while **ROC-AUC is 0.88** and
-PR-AUC is 3.8× the base rate. The model ranks fraudulent orders well; a 0.5 cut-off is simply the
+**Accuracy is below the do-nothing baseline** (0.9271 vs 0.9770) while **ROC-AUC is 0.88** and
+PR-AUC is 3.9× the base rate. The model ranks fraudulent orders well; a 0.5 cut-off is simply the
 wrong operating point for a 2.3 %-positive problem:
 
 | threshold | precision | recall | f1 | tp | fp |
 |---|---|---|---|---|---|
-| 0.50 (default) | 0.0877 | 0.2338 | 0.1275 | 54 | 562 |
-| 0.10 | 0.0940 | **0.8182** | 0.1687 | 189 | 1821 |
+| 0.50 (default) | 0.0942 | 0.2511 | 0.1370 | 58 | 558 |
+| 0.22 (best F1) | 0.0955 | 0.5931 | 0.1646 | 137 | 1,297 |
+| 0.10 | 0.0916 | **0.7835** | 0.1640 | 181 | 1,795 |
+| 0.02 (closest to equal error) | 0.0868 | **0.9264** | 0.1587 | 214 | 2,252 |
 
-At 0.10 it catches **82 % of the fraudulent orders** for an extra 1,259 false alarms on ~10k
-orders. That is the useful result this repository should be reporting, and it is the opposite of
-"99 % accuracy". It also comes with its own caveat: the sweep is computed on the test split, so
-its optimum is a diagnostic, **not** a production threshold — pick that on a validation split
-(the pipeline says so in `metrics.json`).
+At 0.10 it catches **78 % of the fraudulent orders**; at 0.02 it catches **93 %**. Precision stays
+near 0.09 either way — that is the honest shape of this problem, and it is the opposite of
+"99 % accuracy". The sweep is computed on the test split, so its optimum is a diagnostic, **not** a
+production threshold: pick that on a validation split (the pipeline says so in `metrics.json`, and so
+does `summary.md`).
 
-Symbolic form: 12 edges fitted (mean r² 0.98, min 0.89), formula test accuracy 0.6651 under its
-own argmax rule. The closed form generalises worse than the network it came from — worth stating
-plainly rather than quoting the train figure.
+### Reproducible, and tested rather than asserted
+
+Runs seed python, numpy and torch (`data.seed`, `model.seed`) **and** request deterministic kernels
+before the first CUDA call (`CUBLAS_WORKSPACE_CONFIG`, cuDNN deterministic, benchmark off,
+`use_deterministic_algorithms(True, warn_only=True)`), because seeding alone is not enough on a GPU:
+before this was fixed, two runs of the identical config disagreed in the third decimal
+(ROC-AUC 0.8801 vs 0.8819; symbolic accuracy 0.6651 vs 0.5746).
+
+It is now checked, not claimed: two consecutive runs of `default.yaml` into different output
+directories are compared with `scripts/compare_runs.py` — every metric, the confusion matrix, the
+single-feature baseline and the symbolic accuracy matched to **0.00e+00**. The residual is recorded in
+`metrics.json` under `reproducibility`: ops with no deterministic CUDA kernel fall back to their
+default implementation, so bitwise equality across *different* machines or GPU models is not
+guaranteed.
+
+```bash
+python -m kan_fraud.run --config configs/default.yaml --run-name det-a
+python -m kan_fraud.run --config configs/default.yaml --run-name det-b
+python scripts/compare_runs.py results/det-a/metrics.json results/det-b/metrics.json   # expect: REPRODUCIBLE
+```
+
+### What the ranking is actually made of — the baseline that matters
+
+"ROC-AUC 0.88" means nothing until you ask what one column achieves on its own, so the pipeline now
+measures exactly that (`single_feature_baseline` in `metrics.json`, printed in `summary.md`):
+
+- **`Type == TRANSFER` alone scores ROC-AUC 0.8697** — essentially the whole model's 0.8813.
+- Every one of the 4,062 suspected-fraud orders is `Type == TRANSFER`, and no order outside that
+  category is flagged (8.14 % of transfers are suspected fraud, 0.00 % of everything else — checked
+  directly against the CSV).
+- Every other numeric column — sales, profit, discount, shipping days, latitude, longitude — sits at
+  chance: the runner-up by |AUC − 0.5| is `Order Country` at 0.4555, i.e. *below* 0.5, no better than
+  noise. `at_chance` in `metrics.json` counts how many, using a sample-size-aware band (2 SE of AUC
+  under the null, 0.0384 here) so small test sets do not report noise as signal.
+
+So the network learned one categorical precondition of the label, not a fraud signature. The
+one-line rule "flag transfer orders" recalls **100 % of fraud at 8.14 % precision**, which is more
+recall than the network reaches at any threshold with comparable precision (0.9264 at 0.0868 at the
+0.02 cut-off; 0.2511 at 0.0942 at the default 0.5). Nothing here shows a KAN detecting fraud, and no
+threshold tuning changes that. It is the single most important caveat in this repository, and it is
+now printed by the pipeline rather than buried in a notebook.
+
+Symbolic form: 12 edges fitted (mean r² 0.979, min 0.882), formula test accuracy 0.6074 and train
+0.7934 under its own argmax rule. The closed form generalises worse than the network it came from —
+worth stating plainly rather than quoting the train figure.
 
 ### Fast check — `configs/smoke.yaml` (4,000 rows, 5 steps, ~3 min)
 
 Test set: n=800, 15 positives. Accuracy 0.9487 vs baseline 0.9812; recall 0.0667; PR-AUC 0.0768
-vs 0.0187; ROC-AUC 0.8681; formula test accuracy 0.8725. Same shape of result with far less data.
+vs 0.0187; ROC-AUC 0.8681; formula test accuracy 0.8725. Same shape of result with far less data —
+including the single-feature finding (`Type` 0.8624 vs the model's 0.8681, with 34 of 37 features
+within 0.1506 of chance; the band widens with only 15 positives, which is the point of making it
+sample-size aware).
 
 Train-side metrics (0.94 accuracy on the ADASYN-resampled split) are in `metrics.json` too, but
 they are measured on synthetic oversampled rows and are not comparable to the test figures — the
-file says so next to the number.
+file carries that warning as `train_note`, and so does the symbolic block.
 
 Scale up with `configs/full.yaml` (all 180,519 rows) before drawing any conclusion about
 KAN vs MLP.
@@ -136,6 +183,17 @@ Rules the code enforces:
   and are counted in `unseen_test_categories` (the 50k run reports 268 unseen `Order City` values,
   44 `Order State`, 9 `Order Country`) instead of being silently folded onto a real class.
   One-hot encoding is the obvious next experiment.
+- **Location columns are features, and the column lists should not be read as "no personal data
+  reaches the model"**: `Customer City/State/Country`, `Order City/State/Region/Country` and
+  `Latitude`/`Longitude` are all in the matrix. On this masked copy they carry no label signal; on an
+  unmasked copy they are quasi-identifiers. Masked columns (`Customer Email`, `Customer Password`,
+  `Customer Street`, name fields) are dropped by `PII_COLUMNS`, which `assert_no_leakage` re-checks.
+- **`Days for shipping (real)` is kept** even though it is only known after shipment: its univariate
+  ROC-AUC is ~0.49, so it is not a leak, and dropping it would change the published feature set for no
+  measured gain. That decision is commented in `data.py` next to `POST_HOC_COLUMNS`.
+- **A run name cannot escape the results directory** — `--run-name ../x` now raises rather than writing
+  outside `results/`. Curated data that still holds NaN with `drop_na_rows: false` also raises instead
+  of letting the NaNs reach the scaler.
 
 ## pykan API changes
 

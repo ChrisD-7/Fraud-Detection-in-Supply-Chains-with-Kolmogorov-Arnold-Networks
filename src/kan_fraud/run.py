@@ -20,7 +20,7 @@ import yaml
 
 from . import evaluate, kan_model, symbolic
 from .config import Config, load_config
-from .data import prepare
+from .data import UNKNOWN_CATEGORY_CODE, prepare
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -63,8 +63,16 @@ def _to_numpy(tensor: Any) -> np.ndarray:
     return tensor.detach().cpu().numpy()
 
 
+def _safe_run_name(name: str) -> str:
+    """Reject a run name that would escape results_dir: config and --run-name are free text."""
+    if not name or name in {".", ".."} or "/" in name or "\\" in name or Path(name).is_absolute():
+        raise ValueError(f"unsafe run_name {name!r}: use a plain directory name")
+    return name
+
+
 def run(cfg: Config, log: Any = print, frame: Any = None) -> dict[str, Any]:
     started = time.time()
+    reproducibility = kan_model.set_determinism(cfg.model.seed, log)
     device = kan_model.resolve_device(cfg.model.device)
     log(f"device: {device}")
 
@@ -77,11 +85,14 @@ def run(cfg: Config, log: Any = print, frame: Any = None) -> dict[str, Any]:
         f"balance {meta['balance']}"
     )
     if meta.get("unseen_test_categories"):
-        log(f"  unseen test categories (encoded as {meta['unseen_test_categories']}): "
-            f"{meta['unseen_test_categories']}")
+        # The sentinel code, not the dict of per-column counts (that is printed below).
+        log(
+            f"  unseen test categories (encoded as {UNKNOWN_CATEGORY_CODE}): "
+            f"{meta['unseen_test_categories']}"
+        )
 
     dataset = data.to_torch(device)
-    out_dir = Path(cfg.output.results_dir) / cfg.output.run_name
+    out_dir = Path(cfg.output.results_dir) / _safe_run_name(cfg.output.run_name)
     ckpt_path = out_dir / "kan_ckpt"
     ckpt_path.mkdir(parents=True, exist_ok=True)
     model = kan_model.build_kan(cfg, data.n_features, device, ckpt_path=str(ckpt_path))
@@ -101,6 +112,7 @@ def run(cfg: Config, log: Any = print, frame: Any = None) -> dict[str, Any]:
     test_metrics = evaluate.compute_metrics(data.y_test, test_probs)
     baseline = evaluate.majority_baseline(data.y_test)
     sweep = evaluate.threshold_sweep(data.y_test, test_probs)
+    single_baseline = evaluate.single_feature_baseline(data.x_test, data.y_test, data.feature_names)
 
     log(evaluate.format_report("test set - trained KAN", test_metrics, baseline))
     log(evaluate.format_report("train set - trained KAN", train_metrics))
@@ -111,14 +123,27 @@ def run(cfg: Config, log: Any = print, frame: Any = None) -> dict[str, Any]:
         f"tp {best['tp']}, fp {best['fp']})"
     )
     log(f"  note: {evaluate.SWEEP_NOTE}")
+    if single_baseline["best_feature"]:
+        log(
+            f"  best single feature: {single_baseline['best_feature']} ROC-AUC "
+            f"{single_baseline['best_roc_auc']:.4f} vs model {test_metrics['roc_auc']:.4f}; "
+            f"{single_baseline['at_chance']}/{single_baseline['n_considered']} features "
+            f"within {single_baseline.get('chance_band', 0.02)} of chance"
+        )
+        log(f"  note: {single_baseline['note']}")
 
     results: dict[str, Any] = {
         "config": cfg.to_dict(),
         "data": meta,
         "train": train_metrics,
+        "train_note": (
+            "measured on the ADASYN-resampled train split, so it includes synthetic rows "
+            "and is not directly comparable to the test figures"
+        ),
         "test": test_metrics,
         "majority_baseline": baseline,
         "threshold_sweep": sweep,
+        "single_feature_baseline": single_baseline,
         "history": {
             key: [_to_numpy(v) if hasattr(v, "detach") else v for v in values]
             for key, values in (history or {}).items()
@@ -126,6 +151,7 @@ def run(cfg: Config, log: Any = print, frame: Any = None) -> dict[str, Any]:
         },
         "train_seconds": train_seconds,
         "device": device,
+        "reproducibility": reproducibility,
     }
 
     if cfg.symbolic.enabled:
@@ -166,7 +192,7 @@ def run(cfg: Config, log: Any = print, frame: Any = None) -> dict[str, Any]:
 
 
 def save_results(cfg: Config, results: dict[str, Any], log: Any = print) -> Path:
-    out_dir = Path(cfg.output.results_dir) / cfg.output.run_name
+    out_dir = Path(cfg.output.results_dir) / _safe_run_name(cfg.output.run_name)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     (out_dir / "metrics.json").write_text(json.dumps(results, indent=2, default=str))
@@ -195,6 +221,20 @@ def render_summary(results: dict[str, Any]) -> str:
         value, base = test.get(key), baseline.get(key, 0.0)
         lines.append(f"| {key} | {value:.4f} | {base:.4f} | {value - base:+.4f} |")
     lines += ["", f"confusion matrix: {test['confusion']}", ""]
+
+    single = results.get("single_feature_baseline") or {}
+    if single.get("best_feature"):
+        lines += [
+            "## Best single feature",
+            "",
+            f"- `{single['best_feature']}` on its own: ROC-AUC {single['best_roc_auc']:.4f} "
+            f"(model {test['roc_auc']:.4f})",
+            f"- {single['at_chance']} of {single['n_considered']} features are within "
+            f"{single.get('chance_band', 0.02)} of chance (2 SE of AUC under the null)",
+            "",
+            single.get("note", ""),
+            "",
+        ]
 
     sweep = results.get("threshold_sweep") or {}
     if sweep.get("best_f1"):

@@ -13,6 +13,8 @@ API notes (pykan 0.2.8, the version this repo now targets):
 from __future__ import annotations
 
 import io
+import os
+import random
 import sys
 from contextlib import redirect_stdout
 from typing import Any
@@ -25,6 +27,42 @@ from .config import Config
 # pykan prints this before failing the grid update with UnboundLocalError; the message
 # is the only signal that distinguishes it from any other UnboundLocalError.
 _LSTSQ_FAILURE = "lstsq failed"
+
+# cpuBLAS/cuBLAS need this before the CUDA context exists to be bitwise reproducible.
+CUBLAS_WORKSPACE_CONFIG = ":4096:8"
+
+# Two runs of an identical config can differ in the third decimal on CUDA unless the
+# kernels are asked to be deterministic, so the residual is reported rather than assumed
+# away. See README (Reproducibility).
+DETERMINISM_NOTE = (
+    "seeded and deterministic kernels requested; ops with no deterministic CUDA kernel "
+    "fall back to their default implementation (warn_only), so exact bitwise equality "
+    "across machines and GPU models is not guaranteed"
+)
+
+
+def set_determinism(seed: int, log: Any = print) -> dict[str, Any]:
+    """Seed every generator and ask torch for deterministic kernels.
+
+    Must run before the first CUDA call: ``CUBLAS_WORKSPACE_CONFIG`` is read when the
+    cuBLAS handle is created, which is why this sets it here rather than in a shell
+    wrapper.
+    """
+    os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", CUBLAS_WORKSPACE_CONFIG)
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+    torch.use_deterministic_algorithms(True, warn_only=True)
+    return {
+        "seed": seed,
+        "deterministic_algorithms": True,
+        "cublas_workspace_config": os.environ.get("CUBLAS_WORKSPACE_CONFIG"),
+        "note": DETERMINISM_NOTE,
+    }
 
 
 def resolve_device(preference: str = "auto") -> str:
