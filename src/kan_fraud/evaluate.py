@@ -7,6 +7,7 @@ precision, recall, F1 and PR-AUC, each shown next to that trivial baseline.
 
 from __future__ import annotations
 
+import math
 from typing import Any
 
 import numpy as np
@@ -28,6 +29,62 @@ SWEEP_NOTE = (
     "be adopted as a production threshold. Select the operating point on a validation "
     "split instead."
 )
+
+
+# The KAN has to beat more than "always predict no fraud": it has to beat the best single
+# column. On this dataset ``Type == TRANSFER`` alone reaches ROC-AUC ~0.87, which is
+# essentially the whole model's ranking, and every other numeric column sits near chance.
+SINGLE_FEATURE_NOTE = (
+    "diagnostic only: the winner is ranked on the test split, which is a form of tuning. "
+    "Re-select any single-feature baseline on a validation split before relying on it."
+)
+
+
+def _chance_band(n_pos: int, n_neg: int) -> float:
+    """How far from 0.5 an AUC can drift by chance alone (2 SE, Hanley-McNeil), min 0.02."""
+    if n_pos == 0 or n_neg == 0:
+        return 0.02
+    se = math.sqrt((n_pos + n_neg + 1) / (12.0 * n_pos * n_neg))
+    return max(0.02, 2.0 * se)
+
+
+def single_feature_baseline(
+    x: np.ndarray, y: np.ndarray, feature_names: list[str]
+) -> dict[str, Any]:
+    """ROC-AUC of each column on its own: the baseline that actually tests added value.
+
+    No fitting happens here, so this is a diagnostic ranking, not a trained baseline.
+    ``at_chance`` counts columns inside ``chance_band`` - if that is most of the matrix,
+    the headline AUC comes from one or two columns rather than a learned interaction.
+    The band is sample-size aware: on a small test set a pure-noise column can reach 0.56,
+    so a fixed 0.02 window would report noise as signal.
+    """
+    x = np.asarray(x, dtype=np.float64)
+    y = np.asarray(y).astype(int)
+    band = _chance_band(int(y.sum()), int((y == 0).sum()))
+    scores: list[tuple[str, float]] = []
+    for index, name in enumerate(feature_names):
+        if index >= x.shape[1]:
+            break
+        column = x[:, index]
+        if np.isfinite(column).all() and np.unique(column).size > 1:
+            scores.append((name, float(roc_auc_score(y, column))))
+    if not scores:
+        return {
+            "best_feature": None, "best_roc_auc": None, "n_considered": 0,
+            "at_chance": 0, "chance_band": round(band, 4), "ranking": [],
+            "note": SINGLE_FEATURE_NOTE,
+        }
+    ranked = sorted(scores, key=lambda item: -abs(item[1] - 0.5))
+    return {
+        "best_feature": ranked[0][0],
+        "best_roc_auc": ranked[0][1],
+        "n_considered": len(scores),
+        "at_chance": sum(1 for _, auc in scores if abs(auc - 0.5) <= band),
+        "chance_band": round(band, 4),
+        "ranking": [{"feature": name, "roc_auc": auc} for name, auc in ranked[:10]],
+        "note": SINGLE_FEATURE_NOTE,
+    }
 
 
 def probabilities(logits: np.ndarray) -> np.ndarray:
