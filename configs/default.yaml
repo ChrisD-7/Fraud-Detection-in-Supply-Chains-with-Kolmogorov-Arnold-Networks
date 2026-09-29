@@ -1,0 +1,29 @@
+# Default run: 50k rows, grouped split, symbolic form fitted.
+# Raise data.n_sample to null (or use configs/full.yaml) for the whole 180k rows.
+data:
+  zip_path: DataCoSupplyChainDataset.zip
+  n_sample: 50000
+  seed: 42
+  test_size: 0.2
+  split_strategy: grouped
+  balance: adasyn
+
+model:
+  hidden: 6
+  grid: 5
+  k: 3
+  seed: 1
+  device: auto
+  optimiser: LBFGS
+  steps: 20
+  lamb: 0.0
+  loss: cross_entropy
+
+symbolic:
+  enabled: true
+  r2_threshold: 0.8
+  prune: true
+
+output:
+  results_dir: results
+  run_name: default

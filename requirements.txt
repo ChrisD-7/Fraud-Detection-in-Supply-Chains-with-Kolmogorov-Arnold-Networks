@@ -1,0 +1,21 @@
+# Generated from the working conda environment (python 3.11, "kan-fraud").
+# Install with:  pip install -e .   (pyproject.toml carries the same dependencies)
+# The upstream pykan requirements.txt pins a 2024 stack (torch==2.2.2, numpy==1.24.4);
+# this is the current stack the pipeline was actually verified against.
+#
+# GPU note: torch is the CUDA build (cu124) for the RTX 3080 Laptop. On a CPU-only
+# machine install the CPU wheel instead:
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+pykan==0.2.8
+torch==2.6.0+cu124
+numpy==2.4.6
+pandas==3.0.6
+scikit-learn==1.9.1
+imbalanced-learn==0.14.2
+matplotlib==3.11.2
+seaborn==0.13.2
+sympy==1.13.1
+PyYAML==6.0.3
+tqdm==4.70.1
+pytest==9.1.1

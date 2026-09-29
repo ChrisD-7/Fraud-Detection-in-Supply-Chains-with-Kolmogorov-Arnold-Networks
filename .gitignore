@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Test / tooling
+.pytest_cache/
+.coverage
+.ipynb_checkpoints/
+
+# Generated artefacts (regenerable: model plots, video frames, run outputs)
+model/
+results/
+**/figures/
+**/video/
